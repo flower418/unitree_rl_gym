@@ -1,4 +1,6 @@
 import os
+import subprocess
+import socket
 from datetime import datetime
 from typing import Tuple
 import torch
@@ -113,7 +115,9 @@ class TaskRegistry():
             log_dir = None
         else:
             log_dir = os.path.join(log_root, datetime.now().strftime('%b%d_%H-%M-%S') + '_' + train_cfg.runner.run_name)
-        
+
+        _launch_tensorboard(os.path.join(LEGGED_GYM_ROOT_DIR, 'logs'))
+
         train_cfg_dict = class_to_dict(train_cfg)
         runner = OnPolicyRunner(env, train_cfg_dict, log_dir, device=args.rl_device)
         #save resume path before creating a new log_dir
@@ -124,6 +128,32 @@ class TaskRegistry():
             print(f"Loading model from: {resume_path}")
             runner.load(resume_path)
         return runner, train_cfg
+
+_tensorboard_proc = None
+_tensorboard_port = 6006
+
+
+def _launch_tensorboard(logdir):
+    global _tensorboard_proc
+    if _tensorboard_proc is not None:
+        return
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("127.0.0.1", _tensorboard_port))
+        sock.close()
+    except OSError:
+        print(f"TensorBoard port {_tensorboard_port} is already in use, skip launching.")
+        return
+    try:
+        _tensorboard_proc = subprocess.Popen(
+            ["tensorboard", f"--logdir={logdir}", f"--port={_tensorboard_port}"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        print(f"TensorBoard launched at http://localhost:{_tensorboard_port}/")
+    except FileNotFoundError:
+        print("TensorBoard not found, install it with: pip install tensorboard")
+
 
 # make global task registry
 task_registry = TaskRegistry()
