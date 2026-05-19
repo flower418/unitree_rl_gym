@@ -84,6 +84,31 @@ python 1080_balls_of_solitude.py
 
 If you encounter any issues, refer to the official documentation at `isaacgym/docs/index.html`.
 
+##### Troubleshooting: `libpython3.8.so.1.0` not found (Ubuntu 24.04+)
+
+On Ubuntu 24.04 and later, running the verification may fail with:
+
+```
+ImportError: libpython3.8.so.1.0: cannot open shared object file: No such file or directory
+```
+
+This is because Isaac Gym's prebuilt `gym_38.so` requires Python 3.8's shared library, which is not on the system library path.
+
+**Fix — add `$CONDA_PREFIX/lib` to `LD_LIBRARY_PATH` automatically when activating the environment:**
+
+```bash
+mkdir -p $CONDA_PREFIX/etc/conda/activate.d
+echo 'export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH' > $CONDA_PREFIX/etc/conda/activate.d/ld_library_path.sh
+mkdir -p $CONDA_PREFIX/etc/conda/deactivate.d
+echo 'unset LD_LIBRARY_PATH' > $CONDA_PREFIX/etc/conda/deactivate.d/ld_library_path.sh
+```
+
+Then reactivate the environment:
+
+```bash
+conda deactivate && conda activate unitree-rl
+```
+
 ### 2.3 Install rsl_rl
 
 `rsl_rl` is a library implementing reinforcement learning algorithms.
